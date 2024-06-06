@@ -32,9 +32,20 @@ use Google\Ads\GoogleAds\V14\Errors\GoogleAdsError;
 use Google\Ads\GoogleAds\V14\Resources\MediaBundle;
 use Google\Ads\GoogleAds\V14\Resources\MediaFile;
 use Google\Ads\GoogleAds\V14\Services\MediaFileOperation;
+use Google\Ads\GoogleAds\V14\Services\MutateMediaFilesRequest;
 use Google\ApiCore\ApiException;
 
-/** This example uploads an HTML5 zip file as a media bundle. */
+/**
+ * This example uploads an HTML5 zip file as a media bundle.
+ *
+ * This code example uses version v14 of the Google Ads API. Google Ads is migrating
+ * from individual media files to assets, and version v15 of the API removed support for
+ * MediaFileService as part of this migration. Once your Ads account is migrated, this code
+ * example will stop working, and you should use UploadImageAsset.php instead. This code
+ * example will be removed once the migration completes. See
+ * https://ads-developers.googleblog.com/2023/07/image-and-location-auto-migration.html for
+ * more details.
+ */
 class UploadMediaBundle
 {
     private const CUSTOMER_ID = 'INSERT_CUSTOMER_ID_HERE';
@@ -56,6 +67,12 @@ class UploadMediaBundle
         $googleAdsClient = (new GoogleAdsClientBuilder())
             ->fromFile()
             ->withOAuth2Credential($oAuth2Credential)
+            // We set this value to true to show how to use GAPIC v2 source code. You can remove the
+            // below line if you wish to use the old-style source code. Note that in that case, you
+            // probably need to modify some parts of the code below to make it work.
+            // For more information, see
+            // https://developers.devsite.corp.google.com/google-ads/api/docs/client-libs/php/gapic.
+            ->usingGapicV2Source(true)
             ->build();
 
         try {
@@ -114,10 +131,10 @@ class UploadMediaBundle
 
         // Issues a mutate request to add the media file.
         $mediaFileServiceClient = $googleAdsClient->getMediaFileServiceClient();
-        $response = $mediaFileServiceClient->mutateMediaFiles(
+        $response = $mediaFileServiceClient->mutateMediaFiles(MutateMediaFilesRequest::build(
             $customerId,
             [$mediaFileOperation]
-        );
+        ));
 
         printf(
             "The media bundle with resource name '%s' was added.%s",

@@ -24,21 +24,23 @@ use GetOpt\GetOpt;
 use Google\Ads\GoogleAds\Examples\Utils\ArgumentNames;
 use Google\Ads\GoogleAds\Examples\Utils\ArgumentParser;
 use Google\Ads\GoogleAds\Lib\OAuth2TokenBuilder;
-use Google\Ads\GoogleAds\Lib\V14\GoogleAdsClient;
-use Google\Ads\GoogleAds\Lib\V14\GoogleAdsClientBuilder;
-use Google\Ads\GoogleAds\Lib\V14\GoogleAdsException;
-use Google\Ads\GoogleAds\Util\V14\ResourceNames;
-use Google\Ads\GoogleAds\V14\Common\AdScheduleInfo;
-use Google\Ads\GoogleAds\V14\Common\CallAsset;
-use Google\Ads\GoogleAds\V14\Enums\AssetFieldTypeEnum\AssetFieldType;
-use Google\Ads\GoogleAds\V14\Enums\CallConversionReportingStateEnum\CallConversionReportingState;
-use Google\Ads\GoogleAds\V14\Enums\DayOfWeekEnum\DayOfWeek;
-use Google\Ads\GoogleAds\V14\Enums\MinuteOfHourEnum\MinuteOfHour;
-use Google\Ads\GoogleAds\V14\Errors\GoogleAdsError;
-use Google\Ads\GoogleAds\V14\Resources\Asset;
-use Google\Ads\GoogleAds\V14\Resources\CustomerAsset;
-use Google\Ads\GoogleAds\V14\Services\AssetOperation;
-use Google\Ads\GoogleAds\V14\Services\CustomerAssetOperation;
+use Google\Ads\GoogleAds\Lib\V15\GoogleAdsClient;
+use Google\Ads\GoogleAds\Lib\V15\GoogleAdsClientBuilder;
+use Google\Ads\GoogleAds\Lib\V15\GoogleAdsException;
+use Google\Ads\GoogleAds\Util\V15\ResourceNames;
+use Google\Ads\GoogleAds\V15\Common\AdScheduleInfo;
+use Google\Ads\GoogleAds\V15\Common\CallAsset;
+use Google\Ads\GoogleAds\V15\Enums\AssetFieldTypeEnum\AssetFieldType;
+use Google\Ads\GoogleAds\V15\Enums\CallConversionReportingStateEnum\CallConversionReportingState;
+use Google\Ads\GoogleAds\V15\Enums\DayOfWeekEnum\DayOfWeek;
+use Google\Ads\GoogleAds\V15\Enums\MinuteOfHourEnum\MinuteOfHour;
+use Google\Ads\GoogleAds\V15\Errors\GoogleAdsError;
+use Google\Ads\GoogleAds\V15\Resources\Asset;
+use Google\Ads\GoogleAds\V15\Resources\CustomerAsset;
+use Google\Ads\GoogleAds\V15\Services\AssetOperation;
+use Google\Ads\GoogleAds\V15\Services\CustomerAssetOperation;
+use Google\Ads\GoogleAds\V15\Services\MutateAssetsRequest;
+use Google\Ads\GoogleAds\V15\Services\MutateCustomerAssetsRequest;
 use Google\ApiCore\ApiException;
 
 /**
@@ -74,6 +76,12 @@ class AddCall
         // OAuth2 credentials above.
         $googleAdsClient = (new GoogleAdsClientBuilder())->fromFile()
             ->withOAuth2Credential($oAuth2Credential)
+            // We set this value to true to show how to use GAPIC v2 source code. You can remove the
+            // below line if you wish to use the old-style source code. Note that in that case, you
+            // probably need to modify some parts of the code below to make it work.
+            // For more information, see
+            // https://developers.devsite.corp.google.com/google-ads/api/docs/client-libs/php/gapic.
+            ->usingGapicV2Source(true)
             ->build();
 
         try {
@@ -192,7 +200,9 @@ class AddCall
 
         // Issues a mutate request to add the asset and prints its information.
         $assetServiceClient = $googleAdsClient->getAssetServiceClient();
-        $response = $assetServiceClient->mutateAssets($customerId, [$assetOperation]);
+        $response = $assetServiceClient->mutateAssets(
+            MutateAssetsRequest::build($customerId, [$assetOperation])
+        );
         $createdAssetResourceName = $response->getResults()[0]->getResourceName();
         printf(
             "Created a call asset with resource name: '%s'.%s",
@@ -225,8 +235,7 @@ class AddCall
         // Issues a mutate request to add the customer asset and prints its information.
         $customerAssetServiceClient = $googleAdsClient->getCustomerAssetServiceClient();
         $response = $customerAssetServiceClient->mutateCustomerAssets(
-            $customerId,
-            [$customerAssetOperation]
+            MutateCustomerAssetsRequest::build($customerId, [$customerAssetOperation])
         );
         printf(
             "Created a customer asset with resource name: '%s'.%s",

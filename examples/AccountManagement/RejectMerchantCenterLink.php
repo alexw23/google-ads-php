@@ -30,8 +30,10 @@ use Google\Ads\GoogleAds\Lib\V14\GoogleAdsException;
 use Google\Ads\GoogleAds\V14\Enums\MerchantCenterLinkStatusEnum\MerchantCenterLinkStatus;
 use Google\Ads\GoogleAds\V14\Errors\GoogleAdsError;
 use Google\Ads\GoogleAds\V14\Resources\MerchantCenterLink;
+use Google\Ads\GoogleAds\V14\Services\Client\MerchantCenterLinkServiceClient;
+use Google\Ads\GoogleAds\V14\Services\ListMerchantCenterLinksRequest;
 use Google\Ads\GoogleAds\V14\Services\MerchantCenterLinkOperation;
-use Google\Ads\GoogleAds\V14\Services\MerchantCenterLinkServiceClient;
+use Google\Ads\GoogleAds\V14\Services\MutateMerchantCenterLinkRequest;
 use Google\ApiCore\ApiException;
 
 /**
@@ -42,6 +44,10 @@ use Google\ApiCore\ApiException;
  *
  * To run this example, you must use the Merchant Center UI or the Content API for Shopping to
  * send a link request between your Merchant Center and Google Ads accounts.
+ *
+ * <p> This code example uses version v14 of the Google Ads API. Version v15 of the
+ * Google Ads API replaces MerchantCenterLinkService with ProductLinkInvitationService and
+ * ProductLinkService. We will add new code examples using these services shortly.
  */
 class RejectMerchantCenterLink
 {
@@ -64,6 +70,12 @@ class RejectMerchantCenterLink
         // OAuth2 credentials above.
         $googleAdsClient = (new GoogleAdsClientBuilder())->fromFile()
             ->withOAuth2Credential($oAuth2Credential)
+            // We set this value to true to show how to use GAPIC v2 source code. You can remove the
+            // below line if you wish to use the old-style source code. Note that in that case, you
+            // probably need to modify some parts of the code below to make it work.
+            // For more information, see
+            // https://developers.devsite.corp.google.com/google-ads/api/docs/client-libs/php/gapic.
+            ->usingGapicV2Source(true)
             ->build();
 
         try {
@@ -117,7 +129,9 @@ class RejectMerchantCenterLink
 
         // Rejects a pending link request or unlinks an enabled link for a Google Ads account with
         // $customerId from a Merchant Center account with $merchantCenterAccountId.
-        $response = $merchantCenterLinkService->listMerchantCenterLinks($customerId);
+        $response = $merchantCenterLinkService->listMerchantCenterLinks(
+            ListMerchantCenterLinksRequest::build($customerId)
+        );
         printf(
             "%d Merchant Center link(s) found with the following details:%s",
             $response->getMerchantCenterLinks()->count(),
@@ -171,8 +185,10 @@ class RejectMerchantCenterLink
 
         // Issues a mutate request to remove the link and prints the result info.
         $response = $merchantCenterLinkServiceClient->mutateMerchantCenterLink(
-            $customerId,
-            $merchantCenterLinkOperation
+            MutateMerchantCenterLinkRequest::build(
+                $customerId,
+                $merchantCenterLinkOperation
+            )
         );
         $mutateMerchantCenterLinkResult = $response->getResult();
         printf(

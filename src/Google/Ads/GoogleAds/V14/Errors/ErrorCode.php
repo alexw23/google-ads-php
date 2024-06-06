@@ -42,7 +42,7 @@ class ErrorCode extends \Google\Protobuf\Internal\Message
      *     @type int $internal_error
      *           An unexpected server-side error.
      *     @type int $quota_error
-     *           An error with the amonut of quota remaining.
+     *           An error with the amount of quota remaining.
      *     @type int $ad_error
      *           An error with an Ad Group Ad mutate.
      *     @type int $ad_group_error
@@ -299,6 +299,8 @@ class ErrorCode extends \Google\Protobuf\Internal\Message
      *           The reasons for the custom audience error
      *     @type int $audience_error
      *           The reasons for the audience error
+     *     @type int $search_term_insight_error
+     *           The reasons for the Search term insight error
      *     @type int $smart_campaign_error
      *           The reasons for the Smart campaign error
      *     @type int $experiment_arm_error
@@ -596,7 +598,7 @@ class ErrorCode extends \Google\Protobuf\Internal\Message
     }
 
     /**
-     * An error with the amonut of quota remaining.
+     * An error with the amount of quota remaining.
      *
      * Generated from protobuf field <code>.google.ads.googleads.v14.errors.QuotaErrorEnum.QuotaError quota_error = 11;</code>
      * @return int
@@ -612,7 +614,7 @@ class ErrorCode extends \Google\Protobuf\Internal\Message
     }
 
     /**
-     * An error with the amonut of quota remaining.
+     * An error with the amount of quota remaining.
      *
      * Generated from protobuf field <code>.google.ads.googleads.v14.errors.QuotaErrorEnum.QuotaError quota_error = 11;</code>
      * @param int $var
@@ -4590,6 +4592,37 @@ class ErrorCode extends \Google\Protobuf\Internal\Message
     {
         GPBUtil::checkEnum($var, \Google\Ads\GoogleAds\V14\Errors\AudienceErrorEnum\AudienceError::class);
         $this->writeOneof(164, $var);
+
+        return $this;
+    }
+
+    /**
+     * The reasons for the Search term insight error
+     *
+     * Generated from protobuf field <code>.google.ads.googleads.v14.errors.SearchTermInsightErrorEnum.SearchTermInsightError search_term_insight_error = 174;</code>
+     * @return int
+     */
+    public function getSearchTermInsightError()
+    {
+        return $this->readOneof(174);
+    }
+
+    public function hasSearchTermInsightError()
+    {
+        return $this->hasOneof(174);
+    }
+
+    /**
+     * The reasons for the Search term insight error
+     *
+     * Generated from protobuf field <code>.google.ads.googleads.v14.errors.SearchTermInsightErrorEnum.SearchTermInsightError search_term_insight_error = 174;</code>
+     * @param int $var
+     * @return $this
+     */
+    public function setSearchTermInsightError($var)
+    {
+        GPBUtil::checkEnum($var, \Google\Ads\GoogleAds\V14\Errors\SearchTermInsightErrorEnum\SearchTermInsightError::class);
+        $this->writeOneof(174, $var);
 
         return $this;
     }

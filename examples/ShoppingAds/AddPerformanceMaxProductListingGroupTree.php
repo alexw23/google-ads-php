@@ -24,23 +24,25 @@ use GetOpt\GetOpt;
 use Google\Ads\GoogleAds\Examples\Utils\ArgumentNames;
 use Google\Ads\GoogleAds\Examples\Utils\ArgumentParser;
 use Google\Ads\GoogleAds\Lib\OAuth2TokenBuilder;
-use Google\Ads\GoogleAds\Lib\V14\GoogleAdsClient;
-use Google\Ads\GoogleAds\Lib\V14\GoogleAdsClientBuilder;
-use Google\Ads\GoogleAds\Lib\V14\GoogleAdsException;
-use Google\Ads\GoogleAds\Util\V14\ResourceNames;
-use Google\Ads\GoogleAds\V14\Enums\ListingGroupFilterProductConditionEnum\ListingGroupFilterProductCondition;
-use Google\Ads\GoogleAds\V14\Enums\ListingGroupFilterTypeEnum\ListingGroupFilterType;
-use Google\Ads\GoogleAds\V14\Enums\ListingGroupFilterVerticalEnum\ListingGroupFilterVertical;
-use Google\Ads\GoogleAds\V14\Errors\GoogleAdsError;
-use Google\Ads\GoogleAds\V14\Resources\AssetGroupListingGroupFilter;
-use Google\Ads\GoogleAds\V14\Resources\ListingGroupFilterDimension;
-use Google\Ads\GoogleAds\V14\Resources\ListingGroupFilterDimension\ProductBrand;
-use Google\Ads\GoogleAds\V14\Resources\ListingGroupFilterDimension\ProductCondition;
-use Google\Ads\GoogleAds\V14\Services\AssetGroupListingGroupFilterOperation;
-use Google\Ads\GoogleAds\V14\Services\GoogleAdsRow;
-use Google\Ads\GoogleAds\V14\Services\MutateGoogleAdsResponse;
-use Google\Ads\GoogleAds\V14\Services\MutateOperation;
-use Google\Ads\GoogleAds\V14\Services\MutateOperationResponse;
+use Google\Ads\GoogleAds\Lib\V15\GoogleAdsClient;
+use Google\Ads\GoogleAds\Lib\V15\GoogleAdsClientBuilder;
+use Google\Ads\GoogleAds\Lib\V15\GoogleAdsException;
+use Google\Ads\GoogleAds\Util\V15\ResourceNames;
+use Google\Ads\GoogleAds\V15\Enums\ListingGroupFilterListingSourceEnum\ListingGroupFilterListingSource;
+use Google\Ads\GoogleAds\V15\Enums\ListingGroupFilterProductConditionEnum\ListingGroupFilterProductCondition;
+use Google\Ads\GoogleAds\V15\Enums\ListingGroupFilterTypeEnum\ListingGroupFilterType;
+use Google\Ads\GoogleAds\V15\Errors\GoogleAdsError;
+use Google\Ads\GoogleAds\V15\Resources\AssetGroupListingGroupFilter;
+use Google\Ads\GoogleAds\V15\Resources\ListingGroupFilterDimension;
+use Google\Ads\GoogleAds\V15\Resources\ListingGroupFilterDimension\ProductBrand;
+use Google\Ads\GoogleAds\V15\Resources\ListingGroupFilterDimension\ProductCondition;
+use Google\Ads\GoogleAds\V15\Services\AssetGroupListingGroupFilterOperation;
+use Google\Ads\GoogleAds\V15\Services\GoogleAdsRow;
+use Google\Ads\GoogleAds\V15\Services\MutateGoogleAdsRequest;
+use Google\Ads\GoogleAds\V15\Services\MutateGoogleAdsResponse;
+use Google\Ads\GoogleAds\V15\Services\MutateOperation;
+use Google\Ads\GoogleAds\V15\Services\MutateOperationResponse;
+use Google\Ads\GoogleAds\V15\Services\SearchGoogleAdsRequest;
 use Google\ApiCore\ApiException;
 use Google\ApiCore\Serializer;
 
@@ -90,6 +92,12 @@ class AddPerformanceMaxProductListingGroupTree
         // OAuth2 credentials above.
         $googleAdsClient = (new GoogleAdsClientBuilder())->fromFile()
             ->withOAuth2Credential($oAuth2Credential)
+            // We set this value to true to show how to use GAPIC v2 source code. You can remove the
+            // below line if you wish to use the old-style source code. Note that in that case, you
+            // probably need to modify some parts of the code below to make it work.
+            // For more information, see
+            // https://developers.devsite.corp.google.com/google-ads/api/docs/client-libs/php/gapic.
+            ->usingGapicV2Source(true)
             ->build();
 
         try {
@@ -255,8 +263,7 @@ class AddPerformanceMaxProductListingGroupTree
         // Issues a mutate request to create everything and prints its information.
         $googleAdsServiceClient = $googleAdsClient->getGoogleAdsServiceClient();
         $response = $googleAdsServiceClient->mutate(
-            $customerId,
-            $mutateOperations
+            MutateGoogleAdsRequest::build($customerId, $mutateOperations)
         );
 
         self::printResponseDetails($mutateOperations, $response);
@@ -291,8 +298,9 @@ class AddPerformanceMaxProductListingGroupTree
         );
 
         // Issues a search request by specifying page size.
-        $response =
-            $googleAdsServiceClient->search($customerId, $query, ['pageSize' => self::PAGE_SIZE]);
+        $response = $googleAdsServiceClient->search(
+            SearchGoogleAdsRequest::build($customerId, $query)->setPageSize(self::PAGE_SIZE)
+        );
 
         $assetGroupListingGroupFilters = [];
         // Iterates over all rows in all pages to get an asset group listing group filter.
@@ -426,8 +434,8 @@ class AddPerformanceMaxProductListingGroupTree
             // be SUBDIVISION because we add child partitions under it.
             'type' => ListingGroupFilterType::SUBDIVISION,
             // Because this is a Performance Max campaign for retail, we need to specify
-            // that this is in the shopping vertical.
-            'vertical' => ListingGroupFilterVertical::SHOPPING
+            // that this is in the shopping listing source.
+            'listing_source' => ListingGroupFilterListingSource::SHOPPING
         ]);
 
         return new MutateOperation([
@@ -470,8 +478,8 @@ class AddPerformanceMaxProductListingGroupTree
             // another sub-tree.
             'type' => ListingGroupFilterType::SUBDIVISION,
             // Because this is a Performance Max campaign for retail, we need to specify
-            // that this is in the shopping vertical.
-            'vertical' => ListingGroupFilterVertical::SHOPPING,
+            // that this is in the shopping listing source.
+            'listing_source' => ListingGroupFilterListingSource::SHOPPING,
             'parent_listing_group_filter' => ResourceNames::forAssetGroupListingGroupFilter(
                 $customerId,
                 $assetGroupId,
@@ -531,8 +539,8 @@ class AddPerformanceMaxProductListingGroupTree
             // filter won't have children.
             'type' => ListingGroupFilterType::UNIT_INCLUDED,
             // Because this is a Performance Max campaign for retail, we need to specify
-            // that this is in the shopping vertical.
-            'vertical' => ListingGroupFilterVertical::SHOPPING,
+            // that this is in the shopping listing source.
+            'listing_source' => ListingGroupFilterListingSource::SHOPPING,
             'case_value' => $listingGroupFilterDimension
         ]);
 

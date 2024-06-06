@@ -58,6 +58,10 @@ use Google\Auth\FetchAuthTokenInterface;
  * assist with these names, this class includes a format method for each type of
  * name, and additionally a parseName method to extract the individual identifiers
  * contained within formatted names that are returned by the API.
+ *
+ * This service has a new (beta) implementation. See {@see
+ * \Google\Ads\GoogleAds\V14\Services\Client\CustomerNegativeCriterionServiceClient}
+ * to use the new surface.
  */
 class CustomerNegativeCriterionServiceGapicClient
 {
@@ -81,6 +85,8 @@ class CustomerNegativeCriterionServiceGapicClient
     ];
 
     private static $customerNegativeCriterionNameTemplate;
+
+    private static $mobileAppCategoryConstantNameTemplate;
 
     private static $pathTemplateMap;
 
@@ -112,11 +118,21 @@ class CustomerNegativeCriterionServiceGapicClient
         return self::$customerNegativeCriterionNameTemplate;
     }
 
+    private static function getMobileAppCategoryConstantNameTemplate()
+    {
+        if (self::$mobileAppCategoryConstantNameTemplate == null) {
+            self::$mobileAppCategoryConstantNameTemplate = new PathTemplate('mobileAppCategoryConstants/{mobile_app_category_id}');
+        }
+
+        return self::$mobileAppCategoryConstantNameTemplate;
+    }
+
     private static function getPathTemplateMap()
     {
         if (self::$pathTemplateMap == null) {
             self::$pathTemplateMap = [
                 'customerNegativeCriterion' => self::getCustomerNegativeCriterionNameTemplate(),
+                'mobileAppCategoryConstant' => self::getMobileAppCategoryConstantNameTemplate(),
             ];
         }
 
@@ -141,10 +157,26 @@ class CustomerNegativeCriterionServiceGapicClient
     }
 
     /**
+     * Formats a string containing the fully-qualified path to represent a
+     * mobile_app_category_constant resource.
+     *
+     * @param string $mobileAppCategoryId
+     *
+     * @return string The formatted mobile_app_category_constant resource.
+     */
+    public static function mobileAppCategoryConstantName($mobileAppCategoryId)
+    {
+        return self::getMobileAppCategoryConstantNameTemplate()->render([
+            'mobile_app_category_id' => $mobileAppCategoryId,
+        ]);
+    }
+
+    /**
      * Parses a formatted name string and returns an associative array of the components in the name.
      * The following name formats are supported:
      * Template: Pattern
      * - customerNegativeCriterion: customers/{customer_id}/customerNegativeCriteria/{criterion_id}
+     * - mobileAppCategoryConstant: mobileAppCategoryConstants/{mobile_app_category_id}
      *
      * The optional $template argument can be supplied to specify a particular pattern,
      * and must match one of the templates listed above. If no $template argument is

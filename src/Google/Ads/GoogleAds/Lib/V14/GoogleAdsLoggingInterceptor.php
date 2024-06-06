@@ -25,16 +25,13 @@ use Grpc\Interceptor;
  */
 class GoogleAdsLoggingInterceptor extends Interceptor
 {
-    private $callLogger;
-
     /**
      * Constructs the Google Ads logging interceptor.
      *
      * @param GoogleAdsCallLogger $callLogger the call logger for logging gRPC requests
      */
-    public function __construct(GoogleAdsCallLogger $callLogger)
+    public function __construct(private GoogleAdsCallLogger $callLogger)
     {
-        $this->callLogger = $callLogger;
     }
 
     /**
@@ -57,9 +54,9 @@ class GoogleAdsLoggingInterceptor extends Interceptor
         array $options = []
     ) {
         return new GoogleAdsLoggingUnaryCall(
-            $continuation($method, $argument, $deserialize, $metadata, $options),
-            compact('method', 'argument', 'deserialize', 'metadata', 'options'),
-            $this->callLogger
+            innerCall: $continuation($method, $argument, $deserialize, $metadata, $options),
+            lastRequestData: compact('method', 'argument', 'deserialize', 'metadata', 'options'),
+            googleAdsCallLogger: $this->callLogger
         );
     }
 
@@ -83,9 +80,9 @@ class GoogleAdsLoggingInterceptor extends Interceptor
         array $options = []
     ) {
         return new GoogleAdsLoggingServerStreamingCall(
-            $continuation($method, $argument, $deserialize, $metadata, $options),
-            compact('method', 'argument', 'deserialize', 'metadata', 'options'),
-            $this->callLogger
+            innerCall: $continuation($method, $argument, $deserialize, $metadata, $options),
+            lastRequestData: compact('method', 'argument', 'deserialize', 'metadata', 'options'),
+            googleAdsCallLogger: $this->callLogger
         );
     }
 

@@ -22,6 +22,7 @@ use Google\Ads\GoogleAds\Lib\Configuration;
 use Google\Ads\GoogleAds\Lib\ConfigurationLoader;
 use Google\Ads\GoogleAds\Lib\ConfigurationLoaderTestProvider;
 use Google\Ads\GoogleAds\Lib\GoogleAdsBuilder;
+use Google\Ads\GoogleAds\Util\Dependencies;
 use Google\Ads\GoogleAds\Util\EnvironmentalVariables;
 use Google\Auth\FetchAuthTokenInterface;
 use Grpc\ChannelCredentials;
@@ -30,6 +31,7 @@ use InvalidArgumentException;
 use PHPUnit\Framework\TestCase;
 use Psr\Log\LoggerInterface;
 use Psr\Log\LogLevel;
+use UnexpectedValueException;
 
 /**
  * Unit tests for `GoogleAdsClientBuilder`.
@@ -78,7 +80,8 @@ class GoogleAdsClientBuilderTest extends TestCase
             ['endpoint', 'GOOGLE_ADS', 'https://abc.xyz:443'],
             ['proxy', 'CONNECTION', 'https://localhost:8080'],
             ['transport', 'CONNECTION', 'grpc'],
-            ['grpcChannelIsSecure', 'CONNECTION', 'true']
+            ['grpcChannelIsSecure', 'CONNECTION', 'true'],
+            ['useGapicV2Source', 'GAPIC', 'true']
         ];
         $configurationMock = $this->getMockBuilder(Configuration::class)
             ->disableOriginalConstructor()
@@ -99,8 +102,9 @@ class GoogleAdsClientBuilderTest extends TestCase
         $this->assertSame('https://abc.xyz:443', $googleAdsClient->getEndpoint());
         $this->assertSame('https://localhost:8080', $googleAdsClient->getProxy());
         $this->assertSame('grpc', $googleAdsClient->getTransport());
-        $this->assertSame(true, $googleAdsClient->getGrpcChannelIsSecure());
+        $this->assertTrue($googleAdsClient->getGrpcChannelIsSecure());
         $this->assertSame($this->loggerMock, $googleAdsClient->getLogger());
+        $this->assertTrue($googleAdsClient->useGapicV2Source());
     }
 
     /**
@@ -312,6 +316,7 @@ class GoogleAdsClientBuilderTest extends TestCase
             ->withLoginCustomerId(self::$LOGIN_CUSTOMER_ID)
             ->withEndpoint('abc.xyz.com')
             ->withOAuth2Credential($this->fetchAuthTokenInterfaceMock)
+            ->usingGapicV2Source(false)
             ->build();
 
         $this->assertSame(self::$DEVELOPER_TOKEN, $googleAdsClient->getDeveloperToken());
@@ -321,6 +326,7 @@ class GoogleAdsClientBuilderTest extends TestCase
             FetchAuthTokenInterface::class,
             $googleAdsClient->getOAuth2Credential()
         );
+        $this->assertFalse($googleAdsClient->useGapicV2Source());
     }
 
     public function testBuildDefaults()
@@ -544,5 +550,100 @@ class GoogleAdsClientBuilderTest extends TestCase
             ->build();
 
         $this->assertSame(LogLevel::DEBUG, $googleAdsClient->getLogLevel());
+    }
+
+    public function testBuildWithSystemPackageGrpcVersionGreaterThanComposerGrpcVersion()
+    {
+        $dependenciesMock = $this->getMockBuilder(Dependencies::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $dependenciesMock->method('getGrpcComposerVersion')->willReturn('1.1');
+        $dependenciesMock->method('getGrpcSystemPackageVersion')->willReturn('1.1.5');
+        /** @var Dependencies $dependenciesMock */
+        $googleAdsClient = $this->googleAdsClientBuilder
+            ->withDeveloperToken(self::$DEVELOPER_TOKEN)
+            ->withOAuth2Credential($this->fetchAuthTokenInterfaceMock)
+            ->withDependencies($dependenciesMock)
+            ->build();
+        $this->assertInstanceOf(GoogleAdsClient::class, $googleAdsClient);
+        $this->assertEquals(self::$DEVELOPER_TOKEN, $googleAdsClient->getDeveloperToken());
+    }
+
+    public function testBuildWithSystemPackageGrpcVersionNotFound()
+    {
+        $dependenciesMock = $this->getMockBuilder(Dependencies::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $dependenciesMock->method('getGrpcComposerVersion')->willReturn('1.1');
+        $dependenciesMock->method('getGrpcSystemPackageVersion')->willReturn(null);
+        /** @var Dependencies $dependenciesMock */
+        $googleAdsClient = $this->googleAdsClientBuilder
+            ->withDeveloperToken(self::$DEVELOPER_TOKEN)
+            ->withOAuth2Credential($this->fetchAuthTokenInterfaceMock)
+            ->withDependencies($dependenciesMock)
+            ->build();
+        $this->assertInstanceOf(GoogleAdsClient::class, $googleAdsClient);
+        $this->assertEquals(self::$DEVELOPER_TOKEN, $googleAdsClient->getDeveloperToken());
+    }
+
+    public function testBuildWithComposerGrpcVersionNotFound()
+    {
+        $dependenciesMock = $this->getMockBuilder(Dependencies::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $dependenciesMock->method('getGrpcComposerVersion')->willReturn(null);
+        $dependenciesMock->method('getGrpcSystemPackageVersion')->willReturn('2.3');
+        /** @var Dependencies $dependenciesMock */
+        $googleAdsClient = $this->googleAdsClientBuilder
+            ->withDeveloperToken(self::$DEVELOPER_TOKEN)
+            ->withOAuth2Credential($this->fetchAuthTokenInterfaceMock)
+            ->withDependencies($dependenciesMock)
+            ->build();
+        $this->assertInstanceOf(GoogleAdsClient::class, $googleAdsClient);
+        $this->assertEquals(self::$DEVELOPER_TOKEN, $googleAdsClient->getDeveloperToken());
+    }
+
+    public function testBuildWithBothComposerAndSystemPackageGrpcVersionsNotFound()
+    {
+        $dependenciesMock = $this->getMockBuilder(Dependencies::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $dependenciesMock->method('getGrpcComposerVersion')->willReturn(null);
+        $dependenciesMock->method('getGrpcSystemPackageVersion')->willReturn(null);
+        /** @var Dependencies $dependenciesMock */
+        $googleAdsClient = $this->googleAdsClientBuilder
+            ->withDeveloperToken(self::$DEVELOPER_TOKEN)
+            ->withOAuth2Credential($this->fetchAuthTokenInterfaceMock)
+            ->withDependencies($dependenciesMock)
+            ->build();
+        $this->assertInstanceOf(GoogleAdsClient::class, $googleAdsClient);
+        $this->assertEquals(self::$DEVELOPER_TOKEN, $googleAdsClient->getDeveloperToken());
+    }
+
+    public function testBuildFailsWithSystemPackageGrpcVersionSmallerThanComposerGrpcVersion()
+    {
+        $this->expectException(UnexpectedValueException::class);
+        $dependenciesMock = $this->getMockBuilder(Dependencies::class)
+            ->disableOriginalConstructor()
+            ->getMock();
+        $dependenciesMock->method('getGrpcComposerVersion')->willReturn('2');
+        $dependenciesMock->method('getGrpcSystemPackageVersion')->willReturn('1.1.5');
+        /** @var Dependencies $dependenciesMock */
+        $googleAdsClient = $this->googleAdsClientBuilder
+            ->withDeveloperToken(self::$DEVELOPER_TOKEN)
+            ->withOAuth2Credential($this->fetchAuthTokenInterfaceMock)
+            ->withDependencies($dependenciesMock)
+            ->build();
+    }
+
+    public function testBuildUsingGapicV2Source()
+    {
+        $googleAdsClient = $this->googleAdsClientBuilder
+            ->withDeveloperToken(self::$DEVELOPER_TOKEN)
+            ->usingGapicV2Source(true)
+            ->withOAuth2Credential($this->fetchAuthTokenInterfaceMock)
+            ->build();
+
+        $this->assertTrue($googleAdsClient->useGapicV2Source());
     }
 }
